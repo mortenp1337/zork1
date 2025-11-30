@@ -2,6 +2,70 @@
 
 Zork I is a 1980 interactive fiction game written by Marc Blank, Dave Lebling, Bruce Daniels and Tim Anderson and published by Infocom.
 
+## Rust ZIL Compiler and Z-Machine Interpreter
+
+This repository now includes a Rust-based ZIL compiler and Z-machine interpreter that can build and run the game on Linux.
+
+### Building and Running
+
+#### Prerequisites
+
+- Rust (1.70 or later) - Install via [rustup](https://rustup.rs/)
+
+#### Quick Start
+
+```bash
+# Build the compiler and interpreter
+cargo build --release
+
+# Compile the ZIL source files to Z-machine bytecode
+cargo run --release -- compile zork1.zil
+
+# Run the compiled game
+cargo run --release -- run zork1.z3
+
+# Or run with precompiled game
+cargo run --release -- run COMPILED/zork1.z3
+```
+
+#### Usage
+
+```
+zork1                     Compile and run the default game
+zork1 compile <file.zil>  Compile ZIL source to Z-machine code
+zork1 run [file.z3]       Run a compiled story file
+zork1 <file.zil>          Compile the specified ZIL file
+zork1 <file.z3>           Run the specified story file
+```
+
+### Project Structure
+
+- `src/main.rs` - Main entry point with CLI interface
+- `src/compiler/` - ZIL compiler implementation
+  - `lexer.rs` - Tokenizer for ZIL source
+  - `parser.rs` - Parser building AST from tokens
+  - `ast.rs` - Abstract syntax tree definitions
+  - `symbols.rs` - Symbol table for compilation
+  - `codegen.rs` - Z-machine code generator
+  - `zcode.rs` - Z-machine format definitions
+- `src/zmachine/` - Z-machine interpreter
+  - `mod.rs` - Main interpreter logic
+  - `memory.rs` - Z-machine memory management
+  - `instruction.rs` - Instruction definitions
+  - `opcodes.rs` - Opcode execution
+
+### Technical Details
+
+The Rust implementation includes:
+- **ZIL Lexer**: Tokenizes ZIL source code including strings, atoms, forms, and comments
+- **ZIL Parser**: Builds an AST from tokens, handling objects, rooms, routines, and properties
+- **Code Generator**: Produces Z-machine version 3 bytecode
+- **Z-machine Interpreter**: Executes Z-code story files with text I/O
+
+---
+
+## Original Documentation
+
 Further information on Zork I:
 
 * [Wikipedia](https://en.wikipedia.org/wiki/Zork_I)

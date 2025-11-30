@@ -38,6 +38,16 @@ impl Parser {
             return Ok(None);
         }
         
+        // Handle % reader macro - skip the conditional compilation
+        if matches!(self.peek_kind(), Some(TokenKind::Percent)) {
+            self.advance(); // consume %
+            // The next form is a compile-time conditional - just parse and skip it
+            if matches!(self.peek_kind(), Some(TokenKind::LAngle)) {
+                self.skip_form()?;
+            }
+            return Ok(None);
+        }
+        
         if !matches!(self.peek_kind(), Some(TokenKind::LAngle)) {
             if self.is_at_end() {
                 return Ok(None);
@@ -561,6 +571,11 @@ impl Parser {
     /// Parse an expression
     fn parse_expr(&mut self) -> Result<Expr, String> {
         match self.peek_kind() {
+            Some(TokenKind::Percent) => {
+                // Reader macro - skip the conditional
+                self.advance();
+                self.parse_expr()
+            }
             Some(TokenKind::LAngle) => self.parse_form_expr(),
             Some(TokenKind::LParen) => self.parse_list(),
             Some(TokenKind::LBracket) => self.parse_table(),
@@ -786,5 +801,30 @@ impl Parser {
             }
             _ => Err(format!("Expected ']', got {:?}", self.peek())),
         }
+    }
+    
+    /// Skip a form completely (for compile-time conditionals)
+    fn skip_form(&mut self) -> Result<(), String> {
+        if !matches!(self.peek_kind(), Some(TokenKind::LAngle)) {
+            return Ok(());
+        }
+        
+        self.advance(); // consume <
+        let mut depth = 1;
+        
+        while depth > 0 && !self.is_at_end() {
+            match self.peek_kind() {
+                Some(TokenKind::LAngle) => {
+                    depth += 1;
+                }
+                Some(TokenKind::RAngle) => {
+                    depth -= 1;
+                }
+                _ => {}
+            }
+            self.advance();
+        }
+        
+        Ok(())
     }
 }

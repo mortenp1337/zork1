@@ -44,6 +44,8 @@ pub enum TokenKind {
     LVal(String),
     /// Form quotation '<...>
     FormQuote,
+    /// Reader macro prefix %
+    Percent,
     /// End of file
     Eof,
 }
@@ -190,6 +192,11 @@ impl<'a> Lexer<'a> {
                             Ok(Token::new(TokenKind::Atom(atom), line, column))
                         }
                     }
+                    '%' => {
+                        // Reader macro prefix
+                        self.advance();
+                        Ok(Token::new(TokenKind::Percent, line, column))
+                    }
                     _ if Self::is_atom_start(c) => {
                         let atom = self.read_atom();
                         // Check for special atoms that are numbers in different bases
@@ -244,6 +251,18 @@ impl<'a> Lexer<'a> {
                         self.advance();
                         if c == '"' {
                             break;
+                        }
+                    }
+                } else if self.peek() == Some(&'<') {
+                    // Form comment ;<...> - skip the entire form
+                    self.advance(); // skip <
+                    let mut depth = 1;
+                    while depth > 0 {
+                        match self.advance() {
+                            Some('<') => depth += 1,
+                            Some('>') => depth -= 1,
+                            None => break,
+                            _ => {}
                         }
                     }
                 } else {
@@ -315,12 +334,12 @@ impl<'a> Lexer<'a> {
     
     /// Check if a character can start an atom
     fn is_atom_start(c: char) -> bool {
-        c.is_alphabetic() || matches!(c, '_' | '-' | '+' | '*' | '/' | '=' | '?' | '!' | '@' | '#' | '$' | '%' | '^' | '&' | '~' | '\\' | ':')
+        c.is_alphabetic() || matches!(c, '_' | '-' | '+' | '*' | '/' | '=' | '?' | '!' | '@' | '#' | '$' | '%' | '^' | '&' | '~' | '\\' | ':' | '<')
     }
     
     /// Check if a character can be part of an atom
     fn is_atom_char(c: char) -> bool {
-        Self::is_atom_start(c) || c.is_numeric() || c == '-' || c == ':'
+        Self::is_atom_start(c) || c.is_numeric() || c == '-' || c == ':' || c == '>'
     }
     
     /// Read an atom (identifier)
