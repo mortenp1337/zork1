@@ -1,0 +1,16 @@
+[package]
+name = "zork1_rust"
+version = "0.1.0"
+edition = "2021"
+description = "Rust build system and Z-machine interpreter for Zork I"
+license = "MIT"
+
+[dependencies]
+
+[[bin]]
+name = "zork1"
+path = "src/main.rs"
+
+[[bin]]
+name = "zork1-build"
+path = "src/build.rs"
