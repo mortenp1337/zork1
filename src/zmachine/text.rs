@@ -14,6 +14,15 @@ const ALPHABET_A0: &[u8; 26] = b"abcdefghijklmnopqrstuvwxyz";
 const ALPHABET_A1: &[u8; 26] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const ALPHABET_A2: &[u8; 26] = b" \n0123456789.,!?_#'\"/\\-:()";
 
+// Z-character constants
+const ZCHAR_SHIFT_A2: u8 = 5;       // Shift to alphabet A2
+const ZCHAR_ZSCII_ESCAPE: u8 = 6;   // 10-bit ZSCII escape sequence
+const ZCHAR_NEWLINE: u8 = 7;        // Newline in A2
+
+// ZSCII printable range
+const ZSCII_PRINTABLE_MIN: u8 = 32;
+const ZSCII_PRINTABLE_MAX: u8 = 126;
+
 impl TextEngine {
     /// Create a new text engine for the given Z-machine version
     pub fn new(version: u8) -> Self {
@@ -23,7 +32,8 @@ impl TextEngine {
     /// Decode a Z-string at the given address
     /// Returns the decoded string and the number of bytes consumed
     pub fn decode(&self, memory: &Memory, addr: usize) -> (String, usize) {
-        let mut result = String::new();
+        // Pre-allocate with typical room description size
+        let mut result = String::with_capacity(256);
         let mut current_addr = addr;
         let mut alphabet = 0u8;  // 0, 1, or 2
         let mut pending_abbrev = None;
@@ -59,7 +69,7 @@ impl TextEngine {
                 if let Some(high_bits) = pending_zscii {
                     // Second character of ZSCII pair
                     let zscii_char = (high_bits << 5) | zchar;
-                    if zscii_char >= 32u8 && zscii_char < 127u8 {
+                    if zscii_char >= ZSCII_PRINTABLE_MIN && zscii_char <= ZSCII_PRINTABLE_MAX {
                         result.push(zscii_char as char);
                     }
                     pending_zscii = None;
@@ -87,12 +97,12 @@ impl TextEngine {
                             0 => ALPHABET_A0.get(index).copied().unwrap_or(b'?'),
                             1 => ALPHABET_A1.get(index).copied().unwrap_or(b'?'),
                             2 => {
-                                if zchar == 6 {
+                                if zchar == ZCHAR_ZSCII_ESCAPE {
                                     // 10-bit ZSCII escape sequence starts
                                     pending_zscii = Some(0);
                                     alphabet = 0;
                                     continue;
-                                } else if zchar == 7 {
+                                } else if zchar == ZCHAR_NEWLINE {
                                     // Newline
                                     alphabet = 0;
                                     b'\n'
@@ -143,7 +153,7 @@ impl TextEngine {
             } else if let Some(pos) = ALPHABET_A2.iter().position(|&c| c == ch as u8) {
                 // Found in A2 - need shift character first
                 if zchars.len() + 1 < max_zchars {
-                    zchars.push(5);  // Shift to A2
+                    zchars.push(ZCHAR_SHIFT_A2);
                     zchars.push((pos + 6) as u8);
                 }
             }
@@ -152,15 +162,15 @@ impl TextEngine {
         
         // Pad with 5s (shift character - standard padding)
         while zchars.len() < max_zchars {
-            zchars.push(5);
+            zchars.push(ZCHAR_SHIFT_A2);
         }
         
         // Pack into words
         let mut words = Vec::new();
         for i in (0..max_zchars).step_by(3) {
-            let z0 = zchars.get(i).copied().unwrap_or(5) as u16;
-            let z1 = zchars.get(i + 1).copied().unwrap_or(5) as u16;
-            let z2 = zchars.get(i + 2).copied().unwrap_or(5) as u16;
+            let z0 = zchars.get(i).copied().unwrap_or(ZCHAR_SHIFT_A2) as u16;
+            let z1 = zchars.get(i + 1).copied().unwrap_or(ZCHAR_SHIFT_A2) as u16;
+            let z2 = zchars.get(i + 2).copied().unwrap_or(ZCHAR_SHIFT_A2) as u16;
             let word = (z0 << 10) | (z1 << 5) | z2;
             words.push(word);
         }
