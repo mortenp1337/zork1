@@ -1,0 +1,8 @@
+[package]
+name = "zork-interpreter"
+version = "0.1.0"
+edition = "2021"
+description = "A Z-machine interpreter for Zork I and other Infocom games"
+license = "MIT"
+
+[dependencies]
