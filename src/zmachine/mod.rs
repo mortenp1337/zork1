@@ -1195,12 +1195,18 @@ enum Operand {
     Variable(u16),
 }
 
-// Simple random number generator
-static mut RAND_STATE: u32 = 12345;
+// Thread-safe simple random number generator using atomic operations
+use std::sync::atomic::{AtomicU32, Ordering};
+
+static RAND_STATE: AtomicU32 = AtomicU32::new(12345);
 
 fn rand_simple() -> u32 {
-    unsafe {
-        RAND_STATE = RAND_STATE.wrapping_mul(1103515245).wrapping_add(12345);
-        (RAND_STATE / 65536) % 32768
+    let mut current = RAND_STATE.load(Ordering::Relaxed);
+    loop {
+        let next = current.wrapping_mul(1103515245).wrapping_add(12345);
+        match RAND_STATE.compare_exchange_weak(current, next, Ordering::Relaxed, Ordering::Relaxed) {
+            Ok(_) => return (next / 65536) % 32768,
+            Err(c) => current = c,
+        }
     }
 }
