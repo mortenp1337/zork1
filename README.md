@@ -10,6 +10,61 @@ Further information on Zork I:
 * [The Infocom Gallery](http://gallery.guetech.org/zork1/zork1.html)
 * [IFWiki](http://www.ifwiki.org/index.php/Zork_I)
 
+## Playing the Game with the Rust Interpreter
+
+This repository includes a Z-machine interpreter written in Rust that can run the compiled Zork I story file on Linux.
+
+### Prerequisites
+
+- [Rust](https://www.rust-lang.org/tools/install) (stable toolchain)
+- Linux operating system
+
+### Building the Interpreter
+
+```bash
+# Build the release version
+cargo build --release
+
+# The binary will be at: target/release/zork-interpreter
+```
+
+### Running Zork I
+
+```bash
+# Run with the included story file
+./target/release/zork-interpreter COMPILED/zork1.z3
+
+# Or specify a different story file
+./target/release/zork-interpreter /path/to/story.z3
+```
+
+### Game Commands
+
+Common commands you can use in the game:
+- **Movement**: `north`, `south`, `east`, `west`, `up`, `down` (or `n`, `s`, `e`, `w`, `u`, `d`)
+- **Look around**: `look`
+- **Examine objects**: `examine <object>` or `x <object>`
+- **Inventory**: `inventory` or `i`
+- **Take/Drop**: `take <object>`, `drop <object>`
+- **Open/Close**: `open <object>`, `close <object>`
+- **Save/Restore**: `save`, `restore`
+- **Quit**: `quit`
+
+### About the Interpreter
+
+The interpreter supports Z-machine version 3 story files, which includes:
+- Zork I, II, and III
+- Other classic Infocom games from the early 1980s
+
+Features:
+- Full Z-machine version 3 opcode support
+- Text encoding/decoding (Z-strings)
+- Object tree manipulation
+- Input parsing and tokenization
+- Status line display
+
+---
+
 __What is this Repository?__
 
 This repository is a directory of source code for the Infocom game "Zork I", including a variety of files both used and discarded in the production of the game. It is written in ZIL (Zork Implementation Language), a refactoring of MDL (Muddle), itself a dialect of LISP created by MIT students and staff.
