@@ -2,6 +2,73 @@
 
 Zork I is a 1980 interactive fiction game written by Marc Blank, Dave Lebling, Bruce Daniels and Tim Anderson and published by Infocom.
 
+## Playing the Game
+
+This repository includes a Rust-based ZIL compiler that can parse and run Zork I directly from the source files.
+
+### Prerequisites
+
+- [Rust](https://www.rust-lang.org/tools/install) (1.70 or later)
+
+### Building and Running
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/mortenp1337/zork1.git
+   cd zork1
+   ```
+
+2. Build the compiler:
+   ```bash
+   cargo build --release
+   ```
+
+3. Run the game:
+   ```bash
+   ./target/release/zil_compiler
+   ```
+
+   On Windows:
+   ```bash
+   .\target\release\zil_compiler.exe
+   ```
+
+### Gameplay
+
+Once the game starts, you'll see the classic Zork I introduction. Type commands at the `>` prompt:
+
+```
+ZORK I: The Great Underground Empire
+Copyright (c) 1981, 1982, 1983 Infocom, Inc.
+Release 119 / Serial number 880429 / Rust Edition
+
+>look
+>north
+>take lamp
+>inventory
+```
+
+### Supported Commands
+
+| Command | Description |
+|---------|-------------|
+| `N`, `S`, `E`, `W`, `NE`, `NW`, `SE`, `SW` | Move in a direction |
+| `UP`, `DOWN`, `IN`, `OUT` | Move up, down, enter, or exit |
+| `LOOK` or `L` | Describe your surroundings |
+| `EXAMINE <object>` or `X <object>` | Look closely at something |
+| `TAKE <object>` or `GET <object>` | Pick up an object |
+| `DROP <object>` | Put down an object |
+| `INVENTORY` or `I` | List what you're carrying |
+| `OPEN <object>` | Open a container or door |
+| `CLOSE <object>` | Close a container or door |
+| `READ <object>` | Read text on an object |
+| `SCORE` | Show your current score |
+| `VERBOSE` | Show full room descriptions |
+| `BRIEF` | Show short room descriptions |
+| `QUIT` or `Q` | Exit the game |
+
+---
+
 Further information on Zork I:
 
 * [Wikipedia](https://en.wikipedia.org/wiki/Zork_I)
