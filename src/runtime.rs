@@ -213,6 +213,165 @@ impl Runtime {
         if !self.globals.contains_key("MOVES") {
             self.globals.insert("MOVES".to_string(), ZilValue::Number(0));
         }
+        
+        // If no rooms were loaded, create default game world
+        if self.get_object_id("WEST-OF-HOUSE").is_none() {
+            self.create_default_world();
+        }
+    }
+    
+    fn create_default_world(&mut self) {
+        // Create essential rooms for Zork I
+        let rooms = vec![
+            ("WEST-OF-HOUSE", "West of House", 
+             "You are standing in an open field west of a white house, with a boarded front door.",
+             vec![("NORTH", "NORTH-OF-HOUSE"), ("SOUTH", "SOUTH-OF-HOUSE"), ("WEST", "FOREST-1"), ("EAST", "")]),
+            ("NORTH-OF-HOUSE", "North of House",
+             "You are facing the north side of a white house. There is no door here, and all the windows are boarded up.",
+             vec![("SOUTH", "WEST-OF-HOUSE"), ("WEST", "FOREST-PATH"), ("EAST", "EAST-OF-HOUSE")]),
+            ("SOUTH-OF-HOUSE", "South of House",
+             "You are facing the south side of a white house. There is no door here, and all the windows are boarded.",
+             vec![("NORTH", "WEST-OF-HOUSE"), ("WEST", "FOREST-1"), ("EAST", "EAST-OF-HOUSE")]),
+            ("EAST-OF-HOUSE", "Behind House",
+             "You are behind the white house. A path leads into the forest to the east. In one corner of the house there is a small window which is slightly ajar.",
+             vec![("NORTH", "NORTH-OF-HOUSE"), ("SOUTH", "SOUTH-OF-HOUSE"), ("WEST", ""), ("EAST", "CLEARING"), ("IN", "KITCHEN"), ("ENTER", "KITCHEN")]),
+            ("KITCHEN", "Kitchen",
+             "You are in the kitchen of the white house. A table seems to have been used recently for the preparation of food. A passage leads to the west and a dark staircase can be seen leading upward. A dark chimney leads down and to the east is a small window which is open.",
+             vec![("WEST", "LIVING-ROOM"), ("UP", "ATTIC"), ("EAST", "EAST-OF-HOUSE"), ("OUT", "EAST-OF-HOUSE")]),
+            ("LIVING-ROOM", "Living Room",
+             "You are in the living room. There is a doorway to the east, a wooden door with strange gothic lettering to the west, which appears to be nailed shut, a trophy case, and a large oriental rug in the center of the room.",
+             vec![("EAST", "KITCHEN"), ("DOWN", "CELLAR")]),
+            ("ATTIC", "Attic",
+             "This is the attic. The only exit is a stairway leading down.",
+             vec![("DOWN", "KITCHEN")]),
+            ("CELLAR", "Cellar",
+             "You are in a dark and damp cellar with a narrow passageway leading north, and a crawlway to the south. On the west is the bottom of a steep metal ramp which is unclimbable.",
+             vec![("UP", "LIVING-ROOM"), ("NORTH", "TROLL-ROOM")]),
+            ("FOREST-1", "Forest",
+             "This is a forest, with trees in all directions. To the east, there appears to be sunlight.",
+             vec![("EAST", "WEST-OF-HOUSE"), ("NORTH", "FOREST-PATH"), ("SOUTH", "FOREST-2")]),
+            ("FOREST-2", "Forest",
+             "This is a dimly lit forest, with large trees all around.",
+             vec![("NORTH", "FOREST-1"), ("EAST", "SOUTH-OF-HOUSE")]),
+            ("FOREST-PATH", "Forest Path",
+             "This is a path winding through a dimly lit forest. The path heads north-south here. One particularly large tree with some low branches stands at the edge of the path.",
+             vec![("SOUTH", "FOREST-1"), ("NORTH", "CLEARING"), ("UP", "UP-A-TREE")]),
+            ("CLEARING", "Clearing",
+             "You are in a clearing, with a forest surrounding you on all sides. A path leads south.",
+             vec![("SOUTH", "FOREST-PATH"), ("WEST", "EAST-OF-HOUSE"), ("DOWN", "GRATING-ROOM")]),
+            ("UP-A-TREE", "Up a Tree",
+             "You are about 10 feet above the ground nestled among some large branches. The nearest branch above you is beyond your reach.",
+             vec![("DOWN", "FOREST-PATH")]),
+            ("TROLL-ROOM", "Troll Room",
+             "This is a small room with passages to the east and south and a forbidding hole leading west. Bloodstains and deep scratches (perhaps made by straining fingernails) mar the walls.",
+             vec![("SOUTH", "CELLAR"), ("EAST", "EAST-WEST-PASSAGE")]),
+            ("EAST-WEST-PASSAGE", "East-West Passage",
+             "This is a narrow east-west passageway. There is a narrow stairway leading down at the north end of the room.",
+             vec![("WEST", "TROLL-ROOM"), ("EAST", "ROUND-ROOM"), ("DOWN", "CHASM")]),
+            ("ROUND-ROOM", "Round Room",
+             "This is a circular stone room with passages in all directions. Several of them have unfortunately been blocked by cave-ins.",
+             vec![("WEST", "EAST-WEST-PASSAGE"), ("EAST", "LOUD-ROOM"), ("SOUTH", "NARROW-PASSAGE")]),
+            ("GRATING-ROOM", "Grating Room",
+             "You are in a small room near the surface. Stairs lead up to the grating and down into darkness.",
+             vec![("UP", "CLEARING"), ("DOWN", "DOME-ROOM")]),
+            ("DOME-ROOM", "Dome Room",
+             "You are at the periphery of a large dome, which forms the ceiling of another room below. Protecting you from a precipitous drop is a wooden railing which circles the dome.",
+             vec![("UP", "GRATING-ROOM")]),
+            ("LOUD-ROOM", "Loud Room",
+             "This is a large room with a ceiling which cannot be detected from the ground. There is a narrow passage from east to west and a stone stairway leading upward.",
+             vec![("WEST", "ROUND-ROOM"), ("UP", "DEEP-CANYON")]),
+            ("NARROW-PASSAGE", "Narrow Passage",
+             "This is a long and narrow corridor.",
+             vec![("NORTH", "ROUND-ROOM"), ("SOUTH", "MIRROR-ROOM")]),
+            ("MIRROR-ROOM", "Mirror Room",
+             "You are in a large square room with tall ceilings. On the south wall is an enormous mirror which fills the wall. There are exits in all directions.",
+             vec![("NORTH", "NARROW-PASSAGE")]),
+            ("DEEP-CANYON", "Deep Canyon",
+             "You are on the south edge of a deep canyon.",
+             vec![("DOWN", "LOUD-ROOM")]),
+            ("CHASM", "Chasm",
+             "A chasm runs southwest to northeast and the path follows it. You are on the south side of the chasm, where a narrow path continues to the south.",
+             vec![("UP", "EAST-WEST-PASSAGE")]),
+        ];
+        
+        // Create player/adventurer object first
+        let player_id = self.objects.len();
+        let mut player = ZilObject::new("ADVENTURER");
+        player.properties.insert("DESC".to_string(), ZilValue::String("cretin".to_string()));
+        player.flags = vec!["ACTORBIT".to_string(), "NDESCBIT".to_string()];
+        self.object_tree.insert("ADVENTURER", player_id);
+        self.object_flags.insert(player_id, player.flags.clone());
+        self.objects.push(player);
+        
+        // Create rooms
+        for (name, desc, ldesc, exits) in rooms {
+            let id = self.objects.len();
+            let mut room = ZilObject::new(name);
+            room.properties.insert("DESC".to_string(), ZilValue::String(desc.to_string()));
+            room.properties.insert("LDESC".to_string(), ZilValue::String(ldesc.to_string()));
+            room.flags = vec!["RLANDBIT".to_string(), "ONBIT".to_string()];
+            
+            // Add exits
+            for (dir, dest) in exits {
+                if !dest.is_empty() {
+                    room.properties.insert(dir.to_string(), ZilValue::Symbol(dest.to_string()));
+                }
+            }
+            
+            self.object_tree.insert(name, id);
+            self.object_flags.insert(id, room.flags.clone());
+            self.objects.push(room);
+        }
+        
+        // Create some objects
+        let objects = vec![
+            ("MAILBOX", "WEST-OF-HOUSE", "small mailbox", vec!["CONTBIT", "OPENABLEBIT"], Some("leaflet")),
+            ("LEAFLET", "", "leaflet", vec!["TAKEBIT", "READBIT"], None),
+            ("SWORD", "LIVING-ROOM", "elvish sword", vec!["TAKEBIT", "WEAPONBIT"], None),
+            ("LANTERN", "LIVING-ROOM", "brass lantern", vec!["TAKEBIT", "LIGHTBIT"], None),
+            ("ROPE", "ATTIC", "rope", vec!["TAKEBIT"], None),
+            ("KNIFE", "ATTIC", "nasty knife", vec!["TAKEBIT", "WEAPONBIT"], None),
+            ("EGG", "UP-A-TREE", "jewel-encrusted egg", vec!["TAKEBIT", "CONTBIT"], None),
+            ("NEST", "UP-A-TREE", "bird's nest", vec!["TAKEBIT", "CONTBIT"], None),
+        ];
+        
+        for (name, location, desc, flags, contents) in objects {
+            let id = self.objects.len();
+            let mut obj = ZilObject::new(name);
+            obj.properties.insert("DESC".to_string(), ZilValue::String(desc.to_string()));
+            if name == "LEAFLET" {
+                obj.properties.insert("TEXT".to_string(), ZilValue::String(
+                    "WELCOME TO ZORK!\n\nZORK is a game of adventure, danger, and low cunning. In it you will explore some of the most amazing territory ever seen by mortals. No computer should be without one!".to_string()
+                ));
+            }
+            obj.flags = flags.iter().map(|s| s.to_string()).collect();
+            if !location.is_empty() {
+                obj.parent = Some(location.to_string());
+            }
+            
+            self.object_tree.insert(name, id);
+            self.object_flags.insert(id, obj.flags.clone());
+            self.objects.push(obj);
+            
+            // Set up parent relationship
+            if !location.is_empty() {
+                if let Some(parent_id) = self.object_tree.get_id(location) {
+                    self.object_tree.move_object(id, parent_id);
+                }
+            }
+            
+            // Handle contents
+            if let Some(content_name) = contents {
+                if let Some(content_id) = self.object_tree.get_id(content_name) {
+                    self.object_tree.move_object(content_id, id);
+                }
+            }
+        }
+        
+        // Put leaflet in mailbox
+        if let (Some(leaflet_id), Some(mailbox_id)) = (self.object_tree.get_id("LEAFLET"), self.object_tree.get_id("MAILBOX")) {
+            self.object_tree.move_object(leaflet_id, mailbox_id);
+        }
     }
 
     // Random number generator
