@@ -240,6 +240,19 @@ impl<'a> Lexer<'a> {
                 continue;
             }
             
+            // Skip /^L form feed markers at start of line
+            if self.peek() == Some(&'/') && self.column == 1 {
+                self.advance();
+                // Check for ^L or just skip the line
+                while let Some(&c) = self.peek() {
+                    if c == '\n' {
+                        break;
+                    }
+                    self.advance();
+                }
+                continue;
+            }
+            
             // Skip comments
             if self.peek() == Some(&';') {
                 self.advance();
@@ -265,13 +278,45 @@ impl<'a> Lexer<'a> {
                             _ => {}
                         }
                     }
-                } else {
-                    // Single-line comment - skip to end of line
+                } else if self.peek() == Some(&'(') {
+                    // List comment ;(...) - skip the entire list
+                    self.advance(); // skip (
+                    let mut depth = 1;
+                    while depth > 0 {
+                        match self.advance() {
+                            Some('(') => depth += 1,
+                            Some(')') => depth -= 1,
+                            None => break,
+                            _ => {}
+                        }
+                    }
+                } else if self.peek() == Some(&',') || self.peek() == Some(&'.') {
+                    // Comment out a single atom (;,GLOBAL or ;.LOCAL)
+                    self.advance(); // skip , or .
+                    // Skip the atom name
                     while let Some(&c) = self.peek() {
-                        if c == '\n' {
+                        if c.is_whitespace() || matches!(c, '>' | ')' | ']' | '<' | '(' | '[') {
                             break;
                         }
                         self.advance();
+                    }
+                } else if let Some(&c) = self.peek() {
+                    if c.is_alphabetic() || c == '-' || c == '_' || c == '?' {
+                        // Comment out a single atom
+                        while let Some(&c) = self.peek() {
+                            if c.is_whitespace() || matches!(c, '>' | ')' | ']' | '<' | '(' | '[') {
+                                break;
+                            }
+                            self.advance();
+                        }
+                    } else {
+                        // Single-line comment - skip to end of line
+                        while let Some(&c) = self.peek() {
+                            if c == '\n' {
+                                break;
+                            }
+                            self.advance();
+                        }
                     }
                 }
             } else if self.peek() == Some(&'^') {
@@ -293,21 +338,10 @@ impl<'a> Lexer<'a> {
                 }
             } else if self.peek() == Some(&'/') {
                 // Possible page break (form feed indicator)
-                let start = self.position;
-                self.advance();
-                if self.peek() == Some(&'^') {
-                    // Form feed line, skip entire line
-                    while let Some(&c) = self.peek() {
-                        if c == '\n' {
-                            break;
-                        }
-                        self.advance();
-                    }
-                } else {
-                    // Not a comment, put back
-                    self.position = start;
-                    break;
-                }
+                // Peek ahead without consuming
+                // Since we can't peek two chars, we need a different approach
+                // Just check and handle in the main tokenizer
+                break;
             } else {
                 break;
             }
@@ -334,12 +368,12 @@ impl<'a> Lexer<'a> {
     
     /// Check if a character can start an atom
     fn is_atom_start(c: char) -> bool {
-        c.is_alphabetic() || matches!(c, '_' | '-' | '+' | '*' | '/' | '=' | '?' | '!' | '@' | '#' | '$' | '%' | '^' | '&' | '~' | '\\' | ':' | '<')
+        c.is_alphabetic() || matches!(c, '_' | '-' | '+' | '*' | '/' | '=' | '?' | '!' | '@' | '#' | '$' | '^' | '&' | '~' | '\\' | ':')
     }
     
     /// Check if a character can be part of an atom
     fn is_atom_char(c: char) -> bool {
-        Self::is_atom_start(c) || c.is_numeric() || c == '-' || c == ':' || c == '>'
+        Self::is_atom_start(c) || c.is_numeric() || c == '-' || c == ':'
     }
     
     /// Read an atom (identifier)

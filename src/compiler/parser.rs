@@ -131,7 +131,7 @@ impl Parser {
         let mut obj = ObjectDef::new(name);
         
         // Parse property lists
-        while !matches!(self.peek_kind(), Some(TokenKind::RAngle)) {
+        while !matches!(self.peek_kind(), Some(TokenKind::RAngle) | Some(TokenKind::Eof) | None) {
             if matches!(self.peek_kind(), Some(TokenKind::LParen)) {
                 self.advance(); // consume (
                 let prop_name = self.expect_atom()?;
@@ -153,7 +153,7 @@ impl Parser {
         let mut room = RoomDef::new(name);
         
         // Parse property lists
-        while !matches!(self.peek_kind(), Some(TokenKind::RAngle)) {
+        while !matches!(self.peek_kind(), Some(TokenKind::RAngle) | Some(TokenKind::Eof) | None) {
             if matches!(self.peek_kind(), Some(TokenKind::LParen)) {
                 self.advance(); // consume (
                 let prop_name = self.expect_atom()?;
@@ -197,21 +197,21 @@ impl Parser {
             }
             "FLAGS" => {
                 let mut flags = Vec::new();
-                while !matches!(self.peek_kind(), Some(TokenKind::RParen)) {
+                while !matches!(self.peek_kind(), Some(TokenKind::RParen) | Some(TokenKind::Eof) | None) {
                     flags.push(self.expect_atom()?);
                 }
                 Ok(Property::Flags(flags))
             }
             "SYNONYM" | "SYNONYMS" => {
                 let mut syns = Vec::new();
-                while !matches!(self.peek_kind(), Some(TokenKind::RParen)) {
+                while !matches!(self.peek_kind(), Some(TokenKind::RParen) | Some(TokenKind::Eof) | None) {
                     syns.push(self.expect_atom()?);
                 }
                 Ok(Property::Synonym(syns))
             }
             "ADJECTIVE" | "ADJECTIVES" => {
                 let mut adjs = Vec::new();
-                while !matches!(self.peek_kind(), Some(TokenKind::RParen)) {
+                while !matches!(self.peek_kind(), Some(TokenKind::RParen) | Some(TokenKind::Eof) | None) {
                     if matches!(self.peek_kind(), Some(TokenKind::String(_))) {
                         // Skip string comments in adjective list
                         self.advance();
@@ -246,14 +246,14 @@ impl Parser {
             }
             "GLOBAL" => {
                 let mut items = Vec::new();
-                while !matches!(self.peek_kind(), Some(TokenKind::RParen)) {
+                while !matches!(self.peek_kind(), Some(TokenKind::RParen) | Some(TokenKind::Eof) | None) {
                     items.push(self.parse_expr()?);
                 }
                 Ok(Property::List(items))
             }
             "PSEUDO" => {
                 let mut pairs = Vec::new();
-                while !matches!(self.peek_kind(), Some(TokenKind::RParen)) {
+                while !matches!(self.peek_kind(), Some(TokenKind::RParen) | Some(TokenKind::Eof) | None) {
                     let word = if matches!(self.peek_kind(), Some(TokenKind::String(_))) {
                         self.expect_string()?
                     } else {
@@ -285,7 +285,7 @@ impl Parser {
             _ => {
                 // Generic property - parse as expression list
                 let mut items = Vec::new();
-                while !matches!(self.peek_kind(), Some(TokenKind::RParen)) {
+                while !matches!(self.peek_kind(), Some(TokenKind::RParen) | Some(TokenKind::Eof) | None) {
                     items.push(self.parse_expr()?);
                 }
                 if items.len() == 1 {
@@ -317,7 +317,7 @@ impl Parser {
         
         // Skip all tokens until the closing paren
         // For now, we just consume everything
-        while !matches!(self.peek_kind(), Some(TokenKind::RParen)) {
+        while !matches!(self.peek_kind(), Some(TokenKind::RParen) | Some(TokenKind::Eof) | None) {
             self.advance();
         }
         
@@ -331,7 +331,7 @@ impl Parser {
         
         // Parse body
         let mut body = Vec::new();
-        while !matches!(self.peek_kind(), Some(TokenKind::RAngle)) {
+        while !matches!(self.peek_kind(), Some(TokenKind::RAngle) | Some(TokenKind::Eof) | None) {
             body.push(self.parse_expr()?);
         }
         
@@ -347,7 +347,7 @@ impl Parser {
         let mut args = Vec::new();
         let mut arg_type = ArgType::Required;
         
-        while !matches!(self.peek_kind(), Some(TokenKind::RParen)) {
+        while !matches!(self.peek_kind(), Some(TokenKind::RParen) | Some(TokenKind::Eof) | None) {
             match self.peek_kind() {
                 Some(TokenKind::String(s)) => {
                     let s = s.clone();
@@ -408,7 +408,7 @@ impl Parser {
     /// Parse <SYNTAX ...>
     fn parse_syntax(&mut self) -> Result<Form, String> {
         // For now, skip syntax definitions
-        while !matches!(self.peek_kind(), Some(TokenKind::RAngle)) {
+        while !matches!(self.peek_kind(), Some(TokenKind::RAngle) | Some(TokenKind::Eof) | None) {
             self.advance();
         }
         self.expect_close()?;
@@ -426,7 +426,7 @@ impl Parser {
         let mut args = Vec::new();
         if matches!(self.peek_kind(), Some(TokenKind::LParen)) {
             self.advance();
-            while !matches!(self.peek_kind(), Some(TokenKind::RParen)) {
+            while !matches!(self.peek_kind(), Some(TokenKind::RParen) | Some(TokenKind::Eof) | None) {
                 if let Some(TokenKind::Atom(a)) = self.peek_kind() {
                     args.push(a.clone());
                     self.advance();
@@ -448,7 +448,7 @@ impl Parser {
         
         // Parse body
         let mut body = Vec::new();
-        while !matches!(self.peek_kind(), Some(TokenKind::RAngle)) {
+        while !matches!(self.peek_kind(), Some(TokenKind::RAngle) | Some(TokenKind::Eof) | None) {
             body.push(self.parse_expr()?);
         }
         
@@ -469,7 +469,7 @@ impl Parser {
         
         // Parse body
         let mut body = Vec::new();
-        while !matches!(self.peek_kind(), Some(TokenKind::RAngle)) {
+        while !matches!(self.peek_kind(), Some(TokenKind::RAngle) | Some(TokenKind::Eof) | None) {
             body.push(self.parse_expr()?);
         }
         
@@ -504,7 +504,7 @@ impl Parser {
     /// Parse <DIRECTIONS dir...>
     fn parse_directions(&mut self) -> Result<Form, String> {
         let mut dirs = Vec::new();
-        while !matches!(self.peek_kind(), Some(TokenKind::RAngle)) {
+        while !matches!(self.peek_kind(), Some(TokenKind::RAngle) | Some(TokenKind::Eof) | None) {
             dirs.push(self.expect_atom()?);
         }
         self.expect_close()?;
@@ -541,7 +541,7 @@ impl Parser {
     /// Parse <BUZZ word...>
     fn parse_buzz(&mut self) -> Result<Form, String> {
         let mut words = Vec::new();
-        while !matches!(self.peek_kind(), Some(TokenKind::RAngle)) {
+        while !matches!(self.peek_kind(), Some(TokenKind::RAngle) | Some(TokenKind::Eof) | None) {
             words.push(self.expect_atom()?);
         }
         self.expect_close()?;
@@ -552,7 +552,7 @@ impl Parser {
     fn parse_verb_synonym(&mut self) -> Result<Form, String> {
         let verb = self.expect_atom()?;
         let mut syns = Vec::new();
-        while !matches!(self.peek_kind(), Some(TokenKind::RAngle)) {
+        while !matches!(self.peek_kind(), Some(TokenKind::RAngle) | Some(TokenKind::Eof) | None) {
             syns.push(self.expect_atom()?);
         }
         self.expect_close()?;
@@ -562,7 +562,7 @@ impl Parser {
     /// Parse form arguments until closing >
     fn parse_form_args(&mut self) -> Result<Vec<Expr>, String> {
         let mut args = Vec::new();
-        while !matches!(self.peek_kind(), Some(TokenKind::RAngle)) {
+        while !matches!(self.peek_kind(), Some(TokenKind::RAngle) | Some(TokenKind::Eof) | None) {
             args.push(self.parse_expr()?);
         }
         Ok(args)
@@ -638,8 +638,9 @@ impl Parser {
                 Ok(Expr::LVal(name))
             }
             Some(TokenKind::RAngle) | Some(TokenKind::RParen) | Some(TokenKind::RBracket) => {
-                // Empty expression (false)
-                Ok(Expr::False)
+                // This is a closing bracket - we shouldn't be here normally
+                // Return an error to break the loop properly
+                Err(format!("Unexpected closing bracket in expression: {:?}", self.peek()))
             }
             _ => Err(format!("Unexpected token in expression: {:?}", self.peek())),
         }
@@ -673,7 +674,7 @@ impl Parser {
         
         // Parse arguments
         let mut args = Vec::new();
-        while !matches!(self.peek_kind(), Some(TokenKind::RAngle)) {
+        while !matches!(self.peek_kind(), Some(TokenKind::RAngle) | Some(TokenKind::Eof) | None) {
             args.push(self.parse_expr()?);
         }
         
@@ -686,7 +687,7 @@ impl Parser {
         self.advance(); // consume (
         
         let mut items = Vec::new();
-        while !matches!(self.peek_kind(), Some(TokenKind::RParen)) {
+        while !matches!(self.peek_kind(), Some(TokenKind::RParen) | Some(TokenKind::Eof) | None) {
             items.push(self.parse_expr()?);
         }
         
@@ -699,7 +700,7 @@ impl Parser {
         self.advance(); // consume [
         
         let mut items = Vec::new();
-        while !matches!(self.peek_kind(), Some(TokenKind::RBracket)) {
+        while !matches!(self.peek_kind(), Some(TokenKind::RBracket) | Some(TokenKind::Eof) | None) {
             items.push(self.parse_expr()?);
         }
         
